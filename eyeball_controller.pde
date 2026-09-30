@@ -52,9 +52,7 @@
   This does not claim to be a byte-for-byte reference implementation of
   any particular commercial product; it was written from scratch, with
   the Slider/Button widget pattern and general workflow (live control,
-  save/load settings, export a standalone sketch) inspired by the
-  Servo16.pde example the user provided as a style reference.
-  // lines 170, 241, 247
+  save/load settings, export a standalone sketch). 
 */
 
 import processing.serial.*;
