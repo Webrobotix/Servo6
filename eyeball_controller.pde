@@ -1,5 +1,5 @@
 /*
-MIT License
+  MIT License
 
 Copyright (c) 2025 Webrobotix
 
@@ -74,7 +74,9 @@ SOFTWARE.
   This does not claim to be a byte-for-byte reference implementation of
   any particular commercial product; it was written from scratch, with
   the Slider/Button widget pattern and general workflow (live control,
-  save/load settings, export a standalone sketch). 
+  save/load settings, export a standalone sketch) similar to Servo16.pde 
+  that supports 16 servos.
+  // lines 170, 241, 247
 */
 
 import processing.serial.*;
@@ -256,9 +258,9 @@ void setup() {
   panHoldSlider.value = 1200;
   blinkGapSlider = new Slider(650, 720, 200, 20, 1000, 8000);
   blinkGapSlider.value = 3500;
-  squintGapSlider  = new Slider(150, 795, 200, 20, 3000, 60000);
+  squintGapSlider  = new Slider(150, 775, 200, 20, 3000, 60000);
   squintGapSlider.value = 20000;
-  squintHoldSlider = new Slider(400, 795, 200, 20, 200, 4000);
+  squintHoldSlider = new Slider(400, 775, 200, 20, 200, 4000);
   squintHoldSlider.value = 900;
 
   seqMoveSlider = new Slider(150, 720, 200, 20, 50, 3000);
@@ -266,9 +268,9 @@ void setup() {
   seqHoldSlider = new Slider(400, 720, 200, 20, 0, 3000);
   seqHoldSlider.value = 400;
 
-  recordFrameButton = new Button(150, 785, 150, 30, "Record Frame");
-  clearSeqButton    = new Button(310, 785, 90, 30, "Clear");
-  seqBlinkButton    = new Button(410, 785, 180, 30, "Random Blink: Off");
+  recordFrameButton = new Button(150, 765, 150, 30, "Record Frame");
+  clearSeqButton    = new Button(310, 765, 90, 30, "Clear");
+  seqBlinkButton    = new Button(410, 765, 180, 30, "Random Blink: Off");
   playButton        = new Button(530, 630, 110, 32, "Play");
 
   portList = Serial.list();
@@ -441,10 +443,10 @@ void drawModePanel() {
 
  fill(PANEL);
  stroke(210);
-  rect(10, 688, WIN_W - 20, 170, 6);              //Move bottom panel
+  rect(10, 688, WIN_W - 20, 170, 6);              // Move bottom panel
   noStroke();
 
-  if (mode == MODE_RANDOM) {
+  if (mode == MODE_RANDOM) {                            // Random move sliders
     fill(TEXT_COL);
     textSize(12);
     text("Pan speed (ms)", 150, 710);
@@ -453,12 +455,14 @@ void drawModePanel() {
     panSpeedSlider.display(true);
     panHoldSlider.display(true);
     blinkGapSlider.display(true);
-    text("Squint gap (ms)", 150, 785);
-    text("Squint hold (ms)", 400, 785);
+    fill(0);
+      textSize(12);
+    text("Squint gap (ms)", 150, 763);
+    text("Squint hold (ms)", 400, 763);
     squintGapSlider.display(true);
     squintHoldSlider.display(true);
     fill(90);
-    textSize(11);
+    textSize(12);
     text("\"Blink\" servos above blink/squint together; others pan together using their Min/Max/Center.",
          20, 830);
     text(randomPreviewing ? "Playing lifelike random movement live... click Play to stop."
@@ -479,7 +483,7 @@ void drawModePanel() {
     seqBlinkButton.display();
 
     fill(90);
-    textSize(11);
+    textSize(12);
     text("Pose the sliders, click Record Frame to save the pose. Each frame keeps the",
          20, 818);
     text("Move/Hold time shown above at the moment you recorded it. Saved frames: " + sequence.size(),
@@ -1605,10 +1609,10 @@ class Slider {
     rect(x, y, w, h, h / 2);
     float hx = map(value, min, max, x, x + w);
     fill(active ? HANDLE_COL : HANDLE_INACT);
-    ellipse(hx, y + h / 2, h * 1.2, h * 1.2);
-    fill(30);
+    ellipse(hx, y + h / 2, h * 1.8, h * 1.8);
+    fill(255);
     textAlign(CENTER, CENTER);
-    textSize(12);
+    textSize(14);
     text(round(value), hx, y + h / 2);
     textAlign(LEFT, BASELINE);
   }
