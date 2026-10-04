@@ -1,13 +1,7 @@
 Eyeball Controller - Build History
 ===================================
 
-Tracked in eyeball_controller.pde's header comment and window title.
-servo_live_receiver.ino does not carry its own independent build tag;
-"in sync" means both files came from the same update.
-
-Builds prior to 2026-09-26-a predate this versioning scheme (initial
-merge of the live receiver and autonomous-fallback firmware, PIR
-support, and the servo min/max/center groundwork).
+Webrobotix Servo6 Servo Controller
 
 2026-09-26-a
     Made Connect non-blocking (no more 2-second GUI freeze), and added
