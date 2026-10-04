@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
   eyeball_controller.pde
-  Build: 2026-09-26-k  (each recorded frame keeps its own move/hold speed)
+  Build: 2026-09-26-l  (servo labels are now editable - click Rename)
 
   A 6-servo control GUI for an animatronic eye/eyelid rig on an Arduino
   Nano (tested layout: NOYITO Nano I/O expansion shield).
@@ -201,6 +201,11 @@ Button[] centerButton  = new Button[NUM_SERVOS];
 Button[] resetButton   = new Button[NUM_SERVOS];
 Button[] pinUpButton   = new Button[NUM_SERVOS];
 Button[] pinDownButton = new Button[NUM_SERVOS];
+Button[] labelEditButton = new Button[NUM_SERVOS];
+
+int editingLabelRow = -1;      // -1 = not editing any label
+String editingLabelText = "";
+final int LABEL_MAX_LEN = 18;
 
 Button recordFrameButton, clearSeqButton, playButton, seqBlinkButton;
 boolean seqBlinkEnabled = false;
@@ -211,7 +216,7 @@ int draggingSlider = -1;
 
 void setup() {
   size(900, 870);
-  surface.setTitle("Animatronic Eyes Controller - build 2026-09-26-k");
+  surface.setTitle("Animatronic Eyes Controller - build 2026-09-26-l");
   textFont(createFont("Arial", 14));
 
   for (int i = 0; i < NUM_SERVOS; i++) {
@@ -236,6 +241,8 @@ void setup() {
     maxButton[i]    = new Button(bx-20, y + 27, 62, 24, "Set Max");
     centerButton[i] = new Button(bx-20 + 68, y, 62, 24, "Center");
     resetButton[i]  = new Button(bx-20 + 68, y + 27, 62, 24, "Reset");
+
+    labelEditButton[i] = new Button(750, y + 30, 70, 20, "Rename");
   }
 
   connectButton      = new Button(510, 15, 110, 30, "Connect");
@@ -384,9 +391,22 @@ void drawServoRow(int i) {
   rect(10, y-18, WIN_W - 20, rowH +5, 10);
   noStroke();
 
-  fill(TEXT_COL);
-  textSize(15);
-  text(servoLabel[i], 750, y + 40 < rowTop ? y + 46 : y + 22); //  text(servoLabel[i], 20, y +10 < rowTop ? y + 16 : y - 8); Move servo labels
+  if (editingLabelRow == i) {
+    fill(255);
+    stroke(120);
+    rect(748, y + 8, 140, 20);
+    noStroke();
+    fill(20);
+    textSize(13);
+    String cursor = (millis() / 500) % 2 == 0 ? "|" : "";
+    text(editingLabelText + cursor, 752, y + 22);
+  } else {
+    fill(TEXT_COL);
+    textSize(15);
+    text(servoLabel[i], 750, y + 40 < rowTop ? y + 46 : y + 22); //  text(servoLabel[i], 20, y +10 < rowTop ? y + 16 : y - 8); Move servo labels
+  }
+  labelEditButton[i].label = (editingLabelRow == i) ? "Done" : "Rename";
+  labelEditButton[i].display();
 
   // pin number with +/- steppers
   fill(TEXT_COL);
@@ -411,7 +431,7 @@ void drawServoRow(int i) {
   fill(80);
   textSize(11);
   text("min " + servoMin[i] + "  max " + servoMax[i] + "  ctr " + servoCenter[i],
-       sliderX, servoSlider[i].y + servoSlider[i].h + 14);
+       sliderX, servoSlider[i].y + servoSlider[i].h + 21);
 
   minButton[i].display();
   maxButton[i].display();
@@ -510,6 +530,12 @@ void drawStatus() {
 
 // ====================== INTERACTION ======================
 void mousePressed() {
+  // Clicking anywhere other than the label's own Rename/Done button while
+  // mid-edit saves it, so you don't have to remember to click Done first.
+  if (editingLabelRow != -1 && !labelEditButton[editingLabelRow].isOver()) {
+    commitLabelEdit();
+  }
+
   // port list
   if (showPortList) {
     for (int i = 0; i < portList.length; i++) {
@@ -577,6 +603,15 @@ void mousePressed() {
       return;
     }
     if (blinkButton[i].isOver()) { servoBlink[i] = !servoBlink[i]; return; }
+    if (labelEditButton[i].isOver()) {
+      if (editingLabelRow == i) {
+        commitLabelEdit();
+      } else {
+        editingLabelRow = i;
+        editingLabelText = servoLabel[i];
+      }
+      return;
+    }
     if (pinUpButton[i].isOver())   { servoPin[i] = constrain(servoPin[i] + 1, 2, 13); return; }
     if (pinDownButton[i].isOver()) { servoPin[i] = constrain(servoPin[i] - 1, 2, 13); return; }
     if (minButton[i].isOver()) {
@@ -601,6 +636,33 @@ void mousePressed() {
       return;
     }
     if (servoSlider[i].isOver() && servoActive[i]) { draggingSlider = i; return; }
+  }
+}
+
+// Saves the in-progress label edit (if any) and exits edit mode. Blank
+// text is ignored rather than saved, so you can't accidentally wipe a
+// label out by clearing the field and clicking away.
+void commitLabelEdit() {
+  if (editingLabelRow < 0) return;
+  String t = editingLabelText.trim();
+  if (t.length() > 0) servoLabel[editingLabelRow] = t;
+  editingLabelRow = -1;
+}
+
+void keyPressed() {
+  if (editingLabelRow < 0) return; // not editing a label - ignore all other keys
+
+  if (key == BACKSPACE) {
+    if (editingLabelText.length() > 0) {
+      editingLabelText = editingLabelText.substring(0, editingLabelText.length() - 1);
+    }
+  } else if (key == ENTER || key == RETURN) {
+    commitLabelEdit();
+  } else if (key == ESC) {
+    editingLabelRow = -1; // cancel - discard the edit, keep the old label
+    key = 0;              // stop Processing's default ESC-closes-the-sketch behavior
+  } else if (key >= 32 && key <= 126 && key != ',' && editingLabelText.length() < LABEL_MAX_LEN) {
+    editingLabelText += key; // comma is blocked - it's the delimiter in eye_servo_params.txt
   }
 }
 
