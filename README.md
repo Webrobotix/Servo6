@@ -52,7 +52,7 @@ servo from the GUI.
    baked-in behavior on its own.
 
 Whenever you change anything you care about, **Export Sketch again and
-re-upload** - the previous export is deleted automatically each time, so
+re-upload** - the previous export is deleted each time automatically, so
 there's never more than one sitting in the `export/` folder to confuse
 you with an out-of-date copy.
 
@@ -151,7 +151,7 @@ export/
 ## Notes
 
 - Both files track a shared build tag in their header comments
-  (e.g. `Build: 2026-09-26-k`) so it's easy to confirm you're running a
+  (e.g. `Build: 09-26-2026-k`) so it's easy to confirm you're running a
   matching, up-to-date pair.
 - Saved-sequence files from before per-frame timing was added still load
   fine; frames missing timing data just fall back to the sliders'
