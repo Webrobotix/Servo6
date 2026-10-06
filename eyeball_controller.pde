@@ -22,7 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
   eyeball_controller.pde
-  Build: 2026-09-26-l  (servo labels are now editable - click Rename)
+  Build: 2026-09-26-m  (step/overwrite/delete saved sequence frames)
 
   A 6-servo control GUI for an animatronic eye/eyelid rig on an Arduino
   Nano (tested layout: NOYITO Nano I/O expansion shield).
@@ -208,6 +208,8 @@ String editingLabelText = "";
 final int LABEL_MAX_LEN = 18;
 
 Button recordFrameButton, clearSeqButton, playButton, seqBlinkButton;
+Button prevFrameButton, nextFrameButton, overwriteFrameButton, deleteFrameButton;
+int selectedFrame = -1; // -1 = nothing selected/stepped to yet
 boolean seqBlinkEnabled = false;
 int seqBlinkState = 0; // reuses R_IDLE/R_CLOSING/R_HOLD/R_OPENING once declared below
 int seqBlinkT0 = 0, seqNextBlinkAt = 0;
@@ -215,8 +217,8 @@ int seqBlinkT0 = 0, seqNextBlinkAt = 0;
 int draggingSlider = -1;
 
 void setup() {
-  size(900, 870);
-  surface.setTitle("Animatronic Eyes Controller - build 2026-09-26-l");
+  size(900, 910);
+  surface.setTitle("Animatronic Eyes Controller - build 2026-09-26-m");
   textFont(createFont("Arial", 14));
 
   for (int i = 0; i < NUM_SERVOS; i++) {
@@ -279,6 +281,11 @@ void setup() {
   clearSeqButton    = new Button(310, 765, 90, 30, "Clear");
   seqBlinkButton    = new Button(410, 765, 180, 30, "Random Blink: Off");
   playButton        = new Button(530, 630, 110, 32, "Play");
+
+  prevFrameButton      = new Button(150, 805, 60, 28, "< Prev");
+  nextFrameButton      = new Button(340, 805, 60, 28, "Next >");
+  overwriteFrameButton = new Button(420, 805, 130, 28, "Overwrite Frame");
+  deleteFrameButton    = new Button(560, 805, 110, 28, "Delete Frame");
 
   portList = Serial.list();
   loadSequenceFromFile();
@@ -463,7 +470,7 @@ void drawModePanel() {
 
  fill(PANEL);
  stroke(210);
-  rect(10, 688, WIN_W - 20, 170, 6);              // Move bottom panel
+  rect(10, 688, WIN_W - 20, 210, 6);              // Move bottom panel
   noStroke();
 
   if (mode == MODE_RANDOM) {                            // Random move sliders
@@ -502,14 +509,25 @@ void drawModePanel() {
     seqBlinkButton.baseColor = seqBlinkEnabled ? BTN_ON : BTN_COL;
     seqBlinkButton.display();
 
+    prevFrameButton.display();
+    nextFrameButton.display();
+    fill(TEXT_COL);
+    textSize(12);
+    textAlign(CENTER, CENTER);
+    text(sequence.size() == 0 ? "No frames" : "Frame " + (selectedFrame + 1) + " / " + sequence.size(),
+         280, 819);
+    textAlign(LEFT, BASELINE);
+    overwriteFrameButton.display();
+    deleteFrameButton.display();
+
     fill(90);
     textSize(12);
     text("Pose the sliders, click Record Frame to save the pose. Each frame keeps the",
-         20, 818);
+         20, 858);
     text("Move/Hold time shown above at the moment you recorded it. Saved frames: " + sequence.size(),
-         20, 834);
-    text(previewing ? "Playing saved frames... (loops)" : "Play button plays back the saved frames live over serial.",
-         20, 850);
+         20, 874);
+    text(previewing ? "Playing saved frames... (loops)" : "Play/Prev/Next load a frame's pose onto the sliders; Overwrite saves changes back to it.",
+         20, 890);
   }
 
   boolean playingNow = (mode == MODE_SEQUENCE) ? previewing : randomPreviewing;
@@ -586,6 +604,10 @@ void mousePressed() {
     if (recordFrameButton.isOver()) { recordFrame(); return; }
     if (clearSeqButton.isOver())    { clearSequence(); return; }
     if (seqBlinkButton.isOver())    { toggleSeqBlink(); return; }
+    if (prevFrameButton.isOver())      { stepFrame(-1); return; }
+    if (nextFrameButton.isOver())      { stepFrame(1); return; }
+    if (overwriteFrameButton.isOver()) { overwriteSelectedFrame(); return; }
+    if (deleteFrameButton.isOver())    { deleteSelectedFrame(); return; }
     if (seqMoveSlider.isOver()) { draggingSlider = -100; return; }
     if (seqHoldSlider.isOver()) { draggingSlider = -101; return; }
   } else {
@@ -803,15 +825,66 @@ void recordFrame() {
   k.moveMs = round(seqMoveSlider.value);
   k.holdMs = round(seqHoldSlider.value);
   sequence.add(k);
+  selectedFrame = sequence.size() - 1;
   saveSequenceToFile();
   setStatus("Frame " + sequence.size() + " recorded and saved.");
 }
 
 void clearSequence() {
   sequence.clear();
+  selectedFrame = -1;
   previewing = false;
   saveSequenceToFile();
   setStatus("Saved frames cleared.");
+}
+
+// ---- Frame editing: single-step through saved frames, re-record over
+//      one in place, or delete it outright ----
+void stepFrame(int delta) {
+  if (sequence.size() == 0) { setStatus("No frames to step through."); return; }
+  if (previewing) { setStatus("Stop playback before stepping through frames."); return; }
+  if (selectedFrame < 0) selectedFrame = 0;
+  else selectedFrame = constrain(selectedFrame + delta, 0, sequence.size() - 1);
+  loadFrameIntoSliders(selectedFrame);
+  setStatus("Viewing frame " + (selectedFrame + 1) + " of " + sequence.size() + ".");
+}
+
+// Poses the sliders (and the live servos, if connected) to match a saved
+// frame, including the Move/Hold time it was recorded with, so you can
+// see exactly what it looks like and tweak it before overwriting.
+void loadFrameIntoSliders(int idx) {
+  Keyframe k = sequence.get(idx);
+  for (int i = 0; i < NUM_SERVOS; i++) {
+    if (k.pos[i] < 0) continue; // wasn't active/selected when this frame was recorded
+    servoSlider[i].value = k.pos[i];
+    sendCmd("S:" + i + ":" + k.pos[i]);
+  }
+  seqMoveSlider.value = k.moveMs;
+  seqHoldSlider.value = k.holdMs;
+}
+
+void overwriteSelectedFrame() {
+  if (selectedFrame < 0 || selectedFrame >= sequence.size()) { setStatus("Step to a frame first."); return; }
+  if (previewing) { setStatus("Stop playback before overwriting a frame."); return; }
+  Keyframe k = sequence.get(selectedFrame);
+  for (int i = 0; i < NUM_SERVOS; i++) {
+    k.pos[i] = servoActive[i] ? round(servoSlider[i].value) : -1;
+  }
+  k.moveMs = round(seqMoveSlider.value);
+  k.holdMs = round(seqHoldSlider.value);
+  saveSequenceToFile();
+  setStatus("Frame " + (selectedFrame + 1) + " overwritten with the current pose.");
+}
+
+void deleteSelectedFrame() {
+  if (selectedFrame < 0 || selectedFrame >= sequence.size()) { setStatus("Step to a frame first."); return; }
+  if (previewing) { setStatus("Stop playback before deleting a frame."); return; }
+  int deleted = selectedFrame + 1;
+  sequence.remove(selectedFrame);
+  if (sequence.size() == 0) selectedFrame = -1;
+  else selectedFrame = constrain(selectedFrame, 0, sequence.size() - 1);
+  saveSequenceToFile();
+  setStatus("Frame " + deleted + " deleted. " + sequence.size() + " frame(s) remain.");
 }
 
 // A simple, standalone blink cycle you can leave running in Sequence mode
