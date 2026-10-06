@@ -54,6 +54,8 @@ Webrobotix Servo6 Servo Controller
     instead of all frames playing back at whatever the sliders
     currently show.
 
-09-26-2026-l  Build: 2026-09-26-m  (step/overwrite/delete saved sequence frames)
+09-26-2026-l 
     Made servo labels editable - click Rename under any label to
     type a new name.
+
+09-26-2026-m  (step/overwrite/delete saved sequence frames)
