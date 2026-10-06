@@ -3,57 +3,57 @@ Eyeball Controller - Build History
 
 Webrobotix Servo6 Servo Controller
 
-2026-09-26-a
+09-26-2026-a
     Made Connect non-blocking (no more 2-second GUI freeze), and added
     the "No serial ports found" message when the port list comes back
     empty.
 
-2026-09-26-b
+09-26-2026-b
     Fixed the port dropdown being invisible - it was rendering, then
     immediately getting painted over by the first servo row's
     background panel in the same frame.
 
-2026-09-26-c
+09-26-2026-c
     Spaced random blinks further apart (raised the minimum gap), and
     reduced how often a blink could trigger mid-eye-movement.
 
-2026-09-26-d
+09-26-2026-d
     Removed the double-blink chance (single blinks only), and added
     the periodic half-closed squint behavior.
 
-2026-09-26-e
+09-26-2026-e
     Added Squint gap/hold sliders, and fixed the idle-timeout bug
     where the Nano would fall back to autonomous mode even while the
     GUI was connected, if you paused touching a slider for a few
     seconds.
 
-2026-09-26-f
+09-26-2026-f
     Renamed the exported file to export_live_receiver.ino (deleting
     the old name automatically), and fixed Blink defaulting on - it
     was keyed to a label prefix that never actually matched, now
     keyed to pins 6 and 9 directly.
 
-2026-09-26-g
+09-26-2026-g
     Added the slow eye sweep that happens while squinting.
 
-2026-09-26-h
+09-26-2026-h
     Widened that squint sweep to ~90% of each pan servo's full travel.
 
-2026-09-26-i
+09-26-2026-i
     Export Sketch now deletes the whole export/ folder before writing
     a fresh copy; squint sweep redesigned to move slower and pause at
     each limit instead of a continuous sine wave; added the Random
     Blink toggle for Sequence mode.
 
-2026-09-26-j
+09-26-2026-j
     Rearranged the Sequence-mode panel (sliders row, buttons row,
     status text) to match Random mode's layout.
 
-2026-09-26-k
+09-26-2026-k
     Fixed each recorded frame to keep its own Move/Hold speed,
     instead of all frames playing back at whatever the sliders
     currently show.
 
-2026-09-26-l
+09-26-2026-l  Build: 2026-09-26-m  (step/overwrite/delete saved sequence frames)
     Made servo labels editable - click Rename under any label to
     type a new name.
